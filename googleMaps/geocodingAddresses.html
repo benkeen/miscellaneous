@@ -1,0 +1,182 @@
+<html>
+<head>
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+	<script src="https://maps.googleapis.com/maps/api/js?key=KEY_HERE&sensor=false"></script>
+
+	<script>
+		// enable the spiffy new styles
+		google.maps.visualRefresh = true;
+
+		var ns = {
+			map: null,
+			geocoder: null,
+			bounds: null,
+			currSearchMarkerLatLngs: [],
+			currSearchMarkers: [], /// meh! Needed for v3 of Google Maps
+			notFoundAddresses: [],
+			artistHashByLocation: {},
+
+			initMap: function() {
+				var mapOptions = {
+					center: new google.maps.LatLng(-34.397, 150.644),
+					zoom: 8,
+					mapTypeId: google.maps.MapTypeId.ROADMAP
+				};
+				ns.map = new google.maps.Map(document.getElementById("map"), mapOptions);
+				ns.geocoder = new google.maps.Geocoder();
+			},
+
+			addArtistsToMap: function(artists) {
+
+				// reset whatever may have already been loaded
+				ns.clearMarkers();
+				ns.artistHashByLocation = {};
+				ns.notFoundAddresses = [];
+
+				for (var i=0; i<artists.length; i++) {
+					(function(currArtist, index) {
+						ns.geocoder.geocode({ 'address': currArtist.address }, function(results, status) {
+							var serializedAddress = ns._serializeAddress(results[0].formatted_address);
+
+							if (!ns.artistHashByLocation.hasOwnProperty(serializedAddress)) {
+								ns.artistHashByLocation[serializedAddress] = [];
+							}
+							ns.artistHashByLocation[serializedAddress].push(currArtist);
+
+							// this seems pretty lame...
+							var newLatLng = new google.maps.LatLng(
+								parseFloat(results[0].geometry.location.lat()).toFixed(2),
+								parseFloat(results[0].geometry.location.lng()).toFixed(2)
+							);
+							ns.currSearchMarkerLatLngs.push(newLatLng);
+							if (status == google.maps.GeocoderStatus.OK) {
+								var marker = new google.maps.Marker({
+									map: ns.map,
+									position: results[0].geometry.location,
+									serializedAddress: serializedAddress
+								});
+								google.maps.event.addListener(marker, 'click', function() {
+									ns.showInfoWindow(marker);
+								});
+								ns.currSearchMarkers.push(marker);
+							} else {
+								ns.notFoundAddresses.push({ results: results, status: status });
+							}
+
+							// AWFUL CODE HERE URRRGHHHH
+							if (index + 1 === artists.length) {
+								ns.updateViewport();
+							}
+						});
+					})(artists[i], i);
+				}
+			},
+
+			updateViewport: function() {
+//				ns.bounds = new google.maps.LatLngBounds();
+				console.log(ns.artistHashByLocation);
+
+				for (var i = 0, ltLgLen = ns.currSearchMarkerLatLngs.length; i < ltLgLen; i++) {
+					ns.bounds.extend(ns.currSearchMarkerLatLngs[i]);
+				}
+				ns.map.fitBounds(ns.bounds);
+			},
+
+			// this should probably be memoized
+			showInfoWindow: function(marker) {
+				var artistsAtCurrLocation = ns.artistHashByLocation[marker.serializedAddress];
+
+				var infoWindowContent = '';
+				for (var i= 0, j=artistsAtCurrLocation.length; i<j; i++) {
+					infoWindowContent += artistsAtCurrLocation[i].name + '<br />';
+				}
+				var html = '<div style="width: 160px;">' + infoWindowContent + '</div>';
+				var infowindow = new google.maps.InfoWindow({
+					content: html
+				});
+
+				infowindow.open(ns.map, marker);
+			},
+
+			clearMarkers: function() {
+				for (var i=0; i<ns.currSearchMarkers.length; i++) {
+					ns.currSearchMarkers[i].setMap(null);
+				}
+				ns.currSearchMarkers = [];
+				ns.currSearchMarkerLatLngs = [];
+				ns.bounds = new google.maps.LatLngBounds(null); // needed to allow fitBounds to do its job...
+			},
+
+			_serializeAddress: function(str) {
+				return str.replace(/[^a-zA-Z]/g, '');
+			}
+		}
+
+		var artists_Canada = [
+			{
+				name: "Band #1",
+				address: "Vancouver, BC, Canada"
+			},
+			{
+				name: "Band #2",
+				address: "Saskatoon, SK"
+			},
+			{
+				name: "Band #3",
+				address: "Calgary, AB"
+			},
+			{
+				name: "Band #4",
+				address: "Edmonton, AB"
+			},
+			{
+				name: "Band #5",
+				address: "Prince George, BC"
+			},
+			{
+				name: "Band #6",
+				address: "Moncton, NB"
+			},
+			{
+				name: "Band #7",
+				address: "Vancouver, BC, Canada"
+			}
+		];
+
+		var artists_BC = [
+			{
+				name: "Bob's Band",
+				address: "Victoria, BC, Canada"
+			},
+			{
+				name: "The sweet nothin's",
+				address: "Vancouver, BC, Canada"
+			},
+			{
+				name: "Superfluous Chicken",
+				address: "Vancouver, BC, Canada"
+			},
+			{
+				name: "Roadkill",
+				address: "Vancouver, BC, Canada"
+			},
+			{
+				name: "Band #5",
+				address: "Prince George, BC"
+			}
+		];
+
+		$(function() {
+			ns.initMap();
+		});
+	</script>
+
+</head>
+<body>
+
+<input type="button" value="Test Search 1 (Canada)" onclick="ns.addArtistsToMap(artists_Canada);" />
+<input type="button" value="Test Search 2 (BC)" onclick="ns.addArtistsToMap(artists_BC);" />
+<div id="map" style="width: 100%; height: 100%"></div>
+
+</body>
+</html>
