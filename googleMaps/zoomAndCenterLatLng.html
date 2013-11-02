@@ -36,10 +36,7 @@
 				for (var i=0; i<artists.length; i++) {
 					(function(currArtist, index) {
 						ns.geocoder.geocode({ 'address': currArtist.address }, function(results, status) {
-
-							if (status !== "OK") {
-								return;
-							}
+							console.log(results);
 
 							var serializedAddress = ns._serializeAddress(results[0].formatted_address);
 
@@ -116,60 +113,6 @@
 				return str.replace(/[^a-zA-Z]/g, '');
 			}
 		}
-
-		var artists_Canada = [
-			{
-				name: "Band #1",
-				address: "Vancouver, BC, Canada"
-			},
-			{
-				name: "Band #2",
-				address: "Saskatoon, SK"
-			},
-			{
-				name: "Band #3",
-				address: "Calgary, AB"
-			},
-			{
-				name: "Band #4",
-				address: "Edmonton, AB"
-			},
-			{
-				name: "Band #5",
-				address: "Prince George, BC"
-			},
-			{
-				name: "Band #6",
-				address: "Moncton, NB"
-			},
-			{
-				name: "Band #7",
-				address: "Vancouver, BC, Canada"
-			}
-		];
-
-		var artists_BC = [
-			{
-				name: "Bob's Band",
-				address: "Victoria, BC, Canada"
-			},
-			{
-				name: "The sweet nothin's",
-				address: "Vancouver, BC, Canada"
-			},
-			{
-				name: "Superfluous Chicken",
-				address: "Vancouver, BC, Canada"
-			},
-			{
-				name: "Roadkill",
-				address: "Vancouver, BC, Canada"
-			},
-			{
-				name: "Band #5",
-				address: "Prince George, BC"
-			}
-		];
 
 		$(function() {
 			ns.initMap();
