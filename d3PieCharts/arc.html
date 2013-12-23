@@ -6,93 +6,122 @@
 		body {
 			font: 15px sans-serif;
 		}
-		.arc path {
+		path {
 			stroke: #ffffff;
 			stroke-width: 1px;
-		}
-		.chicken {
-		color: blue;
 		}
 	</style>
 	<script src="js/d3.min.js"></script>
 	<script src="js/jquery-2.0.3.min.js"></script>
-
 </head>
 <body>
 
 <h1>Pie Chart experiments</h1>
 
-<input type="button" value="Whatevs" onclick="trans()" />
-
 <script>
-var vis = d3.select("body").append("svg");
+var slideInSpeed = 900;
+var w = 800;
+var h = 400;
+var colors = ["#98abc5", "#8a89a6", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00", "#635222"];
+
 var pi = Math.PI;
 
 var pieChartData = [
 	{ name: "JS", value: 20 },
 	{ name: "CSS", value: 10 },
-	{ name: "HTML", value: 5 }
+	{ name: "HTML", value: 5 },
+	{ name: "Sass", value: 8 },
+	{ name: "PHP", value: 2 }
 ];
 
-var endAngle = pi / 4;
-var arc = d3.svg.arc()
-	.innerRadius(0)
-	.outerRadius(180)
-	.startAngle(0 * (pi/180)) // converting from degs to radians
-	.endAngle(endAngle) // just radians
-
-vis.append("path")
-	.data([1,2,3]
-//		pieChartData.filter(function(d) { // Q: why filter, when the second param doesn't need it?
-//			return d.value
-//		}),
-//		function(d) {
-//			return d.name
-//		}
-	)
-	.attr("id", "myArc")
-	.attr("d", arc)
-	.attr("transform", "translate(200,200)");
-
-//vis.enter()
-//	.
-
-function trans() {
-	d3.select("#myArc").transition()
-		.ease("linear")
-		.duration(750)
-		.attrTween("d", arcTween);
-
-	/*
-	d="M1.1021457184401395e-14,-180A180,180 0 0,1 127.27922061357856,-127.27922061357854L0,0Z"
-
-	Moveto		M1.1021457184401395e-14,-180A180,180
-	Lineto		0
-	Curveto		0,1
-	Arcto
-	ClosePath
-	*/
-
-
-
-//	path.transition()
-//		.ease("elastic")
-//		.duration(750)
-//		.attrTween("d", arcTween);
+var totalSize = 0;
+for (var i=0; i<pieChartData.length; i++) {
+	totalSize += pieChartData[i].value;
 }
 
-function arcTween(b) {
-	var i = d3.interpolate({
-		value: b
-	}, b);
+var arc = d3.svg.arc()
+	.innerRadius(80)
+	.outerRadius(140)
+	.startAngle(0)
+	.endAngle(function(d) { return (d.value / totalSize) * 2 * Math.PI; });
 
+var svg = d3.select("body").append("svg:svg")
+	.attr("width", w)
+	.attr("height", h)
+	.append("svg:g")
+	.attr("transform", "translate(" + (w/2) + "," + (h / 2) + ")");
+
+// -----------------
+/*
+var gradient = svg.append("defs").append("radialGradient")
+	.attr("id", "gradient")
+	.attr("cx", "50%")
+	.attr("cy", "50%");
+
+gradient.append("stop")
+	.attr("offset", "10%")
+	.attr("stop-color", function(d, i) {
+		return colors[i]
+	})
+	.attr("stop-opacity", 1);
+
+gradient.append("stop")
+	//.attr("offset", "100%")
+	.attr("stop-opacity", 0.4);
+*/
+// ----------------------
+
+var path = svg.selectAll("path")
+	.data(
+		pieChartData.filter(function(d) {
+			return d.value;
+		}),
+		function(d) {
+			return d.name;
+		}
+	)
+
+path.enter().append("svg:path")
+	.attr("transform",
+		function(d, i) {
+			var angle = getSegmentStartRotationAngle(d, i);
+			return "rotate(" + angle + ")";
+		})
+	.style("fill", function(d, index) { return colors[index]; })
+	.transition()
+	.ease("cubic-in-out")
+	.duration(slideInSpeed)
+	.attrTween("d", arcTween);
+
+
+function arcTween(b) {
+	var i = d3.interpolate({ value: 0 }, b);
 	return function(t) {
-		console.log(t);
 		return arc(i(t));
 	};
 }
 
+function getSegmentStartRotationAngle(d, index) {
+	var val = 0;
+	for (var i=0; i<index; i++) {
+		val += pieChartData[i].value;
+	}
+	return (val / totalSize) * 360;
+}
 </script>
+
+<hr size="1" />
+
+<i>Options:</i>
+<ul>
+	<li>Inner radius (donut ... pie)</li>
+	<li>Size</li>
+	<li>Load effect: none, fade in, swish</li>
+	<li>Load effect speed</li>
+	<li>Colors</li>
+	<li>Data</li>
+	<li>Labels inside / out</li>
+</ul>
 
 </body>
 </html>
