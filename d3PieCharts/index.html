@@ -92,7 +92,9 @@ g.append("path")
 	.style("fill", function(d, index) { return color(index); });
 
 g.append("text")
-	.attr("transform", function(d) { return "translate(" + arc.centroid(d) + ")"; })
+	.attr("transform", function(d) {
+		return "translate(" + arc.centroid(d) + ") rotate()";
+	})
 	.attr("dy", ".35em")
 	.style("text-anchor", "middle")
 	.text(function(d) {
