@@ -24,6 +24,7 @@
 </head>
 <body>
 
+
 <h1>Pie Chart experiments</h1>
 
 <script>
@@ -73,6 +74,9 @@ var g = svg.selectAll(".arc")
 	.attr("class", "arc");
 
 g.append("path")
+	.attr("id", function(d, i) {
+		return "segment" + i;
+	})
 	.style("fill", function(d, index) {
 		return colors[index];
 	})
@@ -142,12 +146,12 @@ labelGroup
 		return "-200px";
 	});
 
+// fade in the labels when the load effect is complete
 setTimeout(function() {
 	g.selectAll("text")
 		.transition()
 		.duration(500)
 		.style('opacity', 1);
-
 }, slideInSpeed);
 
 function arcTween(b) {
@@ -191,9 +195,49 @@ gradient.append("stop")
 
 $(function() {
 	$(".arc").on("click", function(e) {
-		//console.log(e.target);
+		var $segment = $(e.currentTarget).find("path");
+
+		// detect if it's moving here
+
+		if ($segment.attr("class") === "expanded") {
+			closeSegment($segment[0]);
+		} else {
+			openSegment($segment[0]);
+		}
 	});
 })
+
+function openSegment(segment) {
+
+	// close any open segments
+	if ($(".expanded").length > 0) {
+		closeSegment($(".expanded")[0]);
+	}
+
+	d3.select(segment).transition()
+		.duration(400)
+		.attr("transform", function(d, i) {
+			var c = arc.centroid(d),
+				x = c[0],
+				y = c[1],
+				h = Math.sqrt(x*x + y*y),
+				pullOutSize = 8;
+
+			return "translate(" + ((x/h) * pullOutSize) + ',' + ((y/h) * pullOutSize) + ")";
+		})
+		.each("end", function(d, i) {
+			$(this).attr("class", "expanded");
+		});
+}
+
+function closeSegment(segment) {
+	d3.select(segment).transition()
+		.duration(400)
+		.attr("transform", "translate(0,0)")
+		.each("end", function(d, i) {
+			$(this).attr("class", "");
+		});
+}
 
 </script>
 
@@ -207,12 +251,14 @@ $(function() {
 	<li>Load effect speed</li>
 	<li>segment highlight mouseover</li>
 	<li>segment pull-out onclick</li>
+	<li>segment pull-out transition effect</li>
 	<li>Colors</li>
 	<li>Gradient + controls</li>
 	<li>Data</li>
 	<li>Labels inside / out</li>
 	<li>Tooltips</li>
-	<li>Label + % / value</li>
+	<li>Label format: label + % / label + value / label only</li>
+
 </ul>
 
 </body>
