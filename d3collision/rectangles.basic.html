@@ -17,107 +17,143 @@
 <button id="update" onclick="update()">Renew</button>
 
 <script>
+
+	var width = 650,
+		height = (281.515625 * 2);
+
+	// add a visible circle to will act as our gravity focal point
+	var svg = d3.select("#chart").append("svg")
+		.attr("width", width)
+		.attr("height", height)
+		.append("g");
+
+	var circles = svg.selectAll("circle")
+		.data([{ "x_axis": width / 2, "y_axis": height / 2, "radius": 100, "color" : "green" }])
+		.enter()
+		.append("circle");
+
+	circles
+		.attr("cx", function(d, i) { return d.x_axis; })
+		.attr("cy", function(d, i) { return d.y_axis; })
+		.attr("r", function(d, i) { return d.radius; })
+		.style("fill", function(d, i) { return d.color; })
+		.style("opacity", 0.5)
+		.style("stroke", "#00ff00")
+		.style("stroke-width", 5);
+
+
 	var force = d3.layout.force()
 		.charge(10)
 		.gravity(0.01)
-		.size([960, 470]);
+		.size([width, height]);
 
-	var update;
 
-	d3.json("us-state-centroids.json", function(states) {
-		var project = d3.geo.albersUsa(),
-			idToNode = {},
-			links = [];
+	var coords = [
+		{ x: 530.596011140135, y: 138.6075364854434 },
+		{ x: 500.1708784213509, y: 388.8821976449308 },
+		{ x: 232.78160714420167, y: 477.76171272524186 },
+		{ x: 101.51788766672954, y: 408.65387206875954 },
+		{ x: 49.97839280930572, y: 301.1250491215055 },
+		{ x: 84.43354700459307, y: 205.07857150716464 },
+		{ x: 137.34130932347344, y: 137.72398050949622 },
+		{ x: 135.68145715808703, y: 104.43341482165155 },
+		{ x: 215.99553228911367, y: 90.96759113727313 },
+		{ x: 340.8467603927912, y: 85.17899354730321 }
+	];
 
-		update = function() {
-			d3.select("svg").remove();
+	var nodes = [];
+	for (var i=0; i<coords.length; i++) {
+		nodes.push({
+			x: coords[i].x,
+			y: coords[i].y,
+			gravity: { x: coords[i].x, y: coords[i].y }, // ?????
+			width: Math.random() * 100, // 50,
+			height: 20 // 20
+		});
+	}
 
-			var svg = d3.select("#chart").append("svg")
-				.attr("width", 960)
-				.attr("height", 470)
-				.append("g")
-				.attr("transform", "translate(50,20)");
+	var links = [];
 
-			var nodes = states.features.map(function(d) {
-				var xy = project(d.geometry.coordinates);
-				return idToNode[d.id] = {
-					x: xy[0],
-					y: xy[1],
-					gravity: {x: xy[0], y: xy[1]},
-					width: 100,
-					height: 50
-				};
-			});
+	var update = function() {
+//			d3.select("svg").remove();
 
-			force.nodes(nodes)
-				.links(links)
-				.start()
-				.on("tick", function(e) {
-					var k = e.alpha,
-						kg = k * .02,
-						spaceAround = 0.2;
+//		var nodes = {
+//				x: xy[0],
+//				y: xy[1],
+//				gravity: {x: xy[0], y: xy[1]},
+//				width: 50,
+//				height: 20
+//			};
+//		});
+//
+		force.nodes(nodes)
+			.links(links)
+			.start()
+			.on("tick", function(e) {
 
-					nodes.forEach(function(a, i) {
+				var k = e.alpha,
+					kg = k * .02,
+					spaceAround = 0.2;
 
-						// apply gravity forces
-						a.x += (a.gravity.x - a.x) * kg;
-						a.y += (a.gravity.y - a.y) * kg;
+				nodes.forEach(function(a, i) {
 
-						nodes.slice(i + 1).forEach(function(b) {
-							dx = (a.x - b.x)
-							dy = (a.y - b.y)
+					// apply gravity forces (weird!)
+					a.x += (a.gravity.x - a.x) * kg;
+					a.y += (a.gravity.y - a.y) * kg;
 
-							adx = Math.abs(dx)
-							ady = Math.abs(dy)
+					nodes.slice(i + 1).forEach(function(b) {
+						dx = (a.x - b.x)
+						dy = (a.y - b.y)
 
-							mdx = (1 + spaceAround) * (a.width + b.width) / 2
-							mdy = (1 + spaceAround) * (a.height + b.height) / 2
+						adx = Math.abs(dx)
+						ady = Math.abs(dy)
 
-							if (adx < mdx  &&  ady < mdy) {
-								l = Math.sqrt(dx * dx + dy * dy)
+						mdx = (1 + spaceAround) * (a.width + b.width) / 2
+						mdy = (1 + spaceAround) * (a.height + b.height) / 2
 
-								lx = (adx - mdx) / l * k
-								ly = (ady - mdy) / l * k
+						if (adx < mdx  &&  ady < mdy) {
+							l = Math.sqrt(dx * dx + dy * dy)
 
-								// choose the direction with less overlap
-								if (lx > ly && ly > 0)
-									lx = 0;
-								else if (ly > lx  &&  lx > 0)
-									ly = 0;
+							lx = (adx - mdx) / l * k
+							ly = (ady - mdy) / l * k
 
-								dx *= lx
-								dy *= ly
-								a.x -= dx
-								a.y -= dy
-								b.x += dx
-								b.y += dy
-							}
-						});
+							// choose the direction with less overlap
+							if (lx > ly && ly > 0)
+								lx = 0;
+							else if (ly > lx  &&  lx > 0)
+								ly = 0;
+
+							dx *= lx
+							dy *= ly
+							a.x -= dx
+							a.y -= dy
+							b.x += dx
+							b.y += dy
+						}
 					});
-
-					svg.selectAll("rect")
-						.attr("x", function(d) { return d.x- d.width/2; })
-						.attr("y", function(d) { return d.y- d.height/2; });
 				});
 
+				svg.selectAll("rect")
+					.attr("x", function(d) { return d.x- d.width/2; })
+					.attr("y", function(d) { return d.y- d.height/2; });
+			});
 
-			var g = svg.selectAll("g")
-				.data(nodes)
-				.enter()
-				.append("g")
-				.attr("transform", "translate(100,100), scale(0.5)")
+		var g = svg.selectAll("g")
+			.data(nodes)
+			.enter()
+			.append("g");
+//				.attr("transform", "translate(" + (width/2) + "," + (height/2) + ")");
 
-			g.append("rect")
-				.attr("opacity", 0.75)
-				.attr("x", function(d) { return d.x - d.width/2; })
-				.attr("y", function(d) { return d.y - d.height/2; })
-				.attr("width", function(d, i) { return d.width; })
-				.attr("height", function(d, i) { return d.height; })
-		};
+		g.append("rect")
+			.attr("opacity", 0.75)
+			.attr("x", function(d) { return d.x - d.width/2; })
+			.attr("y", function(d) { return d.y - d.height/2; })
+			.attr("width", function(d, i) { return d.width; })
+			.attr("height", function(d, i) { return d.height; })
+	};
 
-		update();
+	update();
 
-	});
 
 </script>
 
